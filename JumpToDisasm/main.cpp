@@ -18,60 +18,6 @@ namespace
 	static const char hotkey_gd[] = "J";
 }
 
-// Get pointer to func_t by routine name
-func_t *get_func_by_name(const char *func_name)
-{
-	return get_func(get_name_ea(BADADDR, func_name));
-}
-
-
-static bool get_expr_name(citem_t *citem, qstring &rv)
-{
-	if (!citem->is_expr())
-		return false;
-
-	cexpr_t *e = (cexpr_t *)citem;
-
-	// retrieve the name of the routine
-	e->print1(&rv, NULL);
-	tag_remove(&rv);
-
-	return true;
-}
-
-static bool idaapi decompile_func(vdui_t &vu)
-{
-	// Determine the ctree item to highlight
-	vu.get_current_item(USE_KEYBOARD);
-	citem_t *highlight = vu.item.is_citem() ? vu.item.e : NULL;
-	if (!highlight)
-		return false;
-
-	// if it is an expression
-	if (!highlight->is_expr())
-		return false;
-
-	cexpr_t *e = (cexpr_t *)highlight;
-
-	qstring qcitem_name;
-	if (!get_expr_name(highlight, qcitem_name))
-		return false;
-
-	const char *citem_name = qcitem_name.c_str();
-	const char *proc_name = citem_name + strlen(citem_name);
-
-	while ((proc_name > citem_name) && (*(proc_name - 1) != '>'))  // WTF is going here?
-		proc_name--;
-
-	if (proc_name != citem_name)
-	{
-		if (func_t *func = get_func_by_name(proc_name))
-			open_pseudocode(func->start_ea, -1);
-	}
-
-	return true;
-}
-
 // show disassembly line for ctree->item
 bool idaapi decompiled_line_to_disasm_cb(void *ud)
 {
@@ -101,12 +47,6 @@ static ssize_t idaapi callback(void *ud, hexrays_event_t event, va_list va)
 	}
 	break;
 
-	case hxe_double_click:
-	{
-		vdui_t &vu = *va_arg(va, vdui_t *);
-		decompile_func(vu);
-	}
-	break;
 	default:
 		break;
 	}
